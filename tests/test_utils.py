@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for twine's configuration and URL utilities."""
 import os.path
 
 import pretend
@@ -23,6 +24,7 @@ from twine import utils
 
 
 def test_get_config(write_config_file):
+    """Read username, password, and repository from a .pypirc."""
     config_file = write_config_file("""
         [distutils]
         index-servers = pypi
@@ -64,6 +66,7 @@ def test_get_config_no_distutils(write_config_file):
 
 
 def test_get_config_no_section(write_config_file):
+    """Ignore index servers that have no matching section."""
     config_file = write_config_file("""
         [distutils]
         index-servers = pypi foo
@@ -83,6 +86,7 @@ def test_get_config_no_section(write_config_file):
 
 
 def test_get_config_override_pypi_url(write_config_file):
+    """Use a custom repository URL from the .pypirc."""
     config_file = write_config_file("""
         [pypi]
         repository = http://pypiproxy
@@ -92,6 +96,7 @@ def test_get_config_override_pypi_url(write_config_file):
 
 
 def test_get_config_missing(config_file):
+    """Fall back to defaults when the config file is missing."""
     assert utils.get_config(config_file) == {
         "pypi": {
             "repository": utils.DEFAULT_REPOSITORY,
@@ -121,6 +126,7 @@ def test_empty_userpass(write_config_file):
 
 
 def test_get_repository_config_missing(config_file):
+    """Build a config for a repository not present in the .pypirc."""
     repository_url = "https://notexisting.python.org/pypi"
     exp = {
         "repository": repository_url,
@@ -162,6 +168,7 @@ def test_get_repository_config_missing(config_file):
 def test_get_repository_config_url_with_auth(
     config_file, repository_url, expected_config
 ):
+    """Resolve credentials for a repository URL with embedded auth."""
     assert (
         utils.get_repository_from_config(config_file, "foo", repository_url)
         == expected_config
@@ -183,6 +190,7 @@ def test_get_repository_config_url_with_auth(
     ],
 )
 def test_sanitize_url(input_url: str, expected_url: str) -> None:
+    """Normalize a repository URL to its canonical form."""
     assert utils.sanitize_url(input_url) == expected_url
 
 
@@ -258,6 +266,7 @@ def test_get_repository_config_missing_file(repository):
 
 
 def test_get_config_deprecated_pypirc():
+    """Read a legacy .pypirc using the deprecated format."""
     tests_dir = os.path.dirname(os.path.abspath(__file__))
     deprecated_pypirc_path = os.path.join(tests_dir, "fixtures", "deprecated-pypirc")
 
@@ -284,6 +293,7 @@ def test_get_config_deprecated_pypirc():
     ),
 )
 def test_get_userpass_value(cli_value, config, key, strategy, expected):
+    """Resolve a credential using the configured strategy."""
     ret = utils.get_userpass_value(cli_value, config, key, strategy)
     assert ret == expected
 
@@ -300,6 +310,7 @@ def test_get_userpass_value(cli_value, config, key, strategy, expected):
 def test_default_to_environment_action(
     monkeypatch, env_name, default, environ, expected
 ):
+    """Default an argument to its environment variable's value."""
     option_strings = ("-x", "--example")
     dest = "example"
     for key, value in environ.items():
@@ -318,6 +329,7 @@ def test_default_to_environment_action(
     "repo_url", ["https://pypi.python.org", "https://testpypi.python.org"]
 )
 def test_check_status_code_for_deprecated_pypi_url(repo_url):
+    """Raise when a deprecated PyPI URL returns a 410."""
     response = pretend.stub(status_code=410, url=repo_url)
 
     # value of Verbose doesn't matter for this check

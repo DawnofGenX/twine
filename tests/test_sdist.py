@@ -1,3 +1,4 @@
+"""Tests for reading metadata from source distributions."""
 import os
 import pathlib
 import tarfile
@@ -18,12 +19,14 @@ from .helpers import build_archive
     ]
 )
 def example_sdist(request):
+    """Build an SDist from a parametrized fixture file."""
     file_name = os.path.join(TESTS_DIR, request.param)
     return sdist.SDist(file_name)
 
 
 @pytest.fixture(params=["tar.gz", "zip"])
 def archive_format(request):
+    """Yield the archive format requested by the test."""
     return request.param
 
 
@@ -173,4 +176,5 @@ def test_multiple_top_level(archive_format, tmp_path):
 
 
 def test_py_version(example_sdist):
+    """Report the Python version of an sdist as source."""
     assert example_sdist.py_version == "source"

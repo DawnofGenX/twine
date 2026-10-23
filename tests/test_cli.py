@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tests for twine's command-line dispatch."""
 import pretend
 import pytest
 
@@ -19,6 +20,7 @@ from twine.commands import upload
 
 
 def test_dispatch_to_subcommand(monkeypatch):
+    """Dispatch a known subcommand to its main with the remaining args."""
     replaced_main = pretend.call_recorder(lambda args: None)
     monkeypatch.setattr(upload, "main", replaced_main)
 
@@ -28,5 +30,6 @@ def test_dispatch_to_subcommand(monkeypatch):
 
 
 def test_catches_enoent():
+    """Exit when the requested subcommand does not exist."""
     with pytest.raises(SystemExit):
         cli.dispatch(["non-existent-command"])

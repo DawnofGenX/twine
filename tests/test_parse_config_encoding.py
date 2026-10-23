@@ -1,3 +1,4 @@
+"""Tests for parsing .pypirc files with non-UTF-8 encodings."""
 import builtins
 import logging
 import pathlib

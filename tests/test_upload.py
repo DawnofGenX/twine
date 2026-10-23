@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tests for twine's upload command."""
 import os
 
 import pretend
@@ -271,6 +272,7 @@ def test_success_when_gpg_is_run(upload_settings, stub_repository, monkeypatch):
 def test_exception_for_http_status(
     verbose, upload_settings, stub_response, capsys, caplog
 ):
+    """Raise an exception carrying the HTTP status on failure."""
     upload_settings.verbose = verbose
 
     stub_response.is_redirect = False
@@ -298,6 +300,7 @@ def test_exception_for_http_status(
 
 
 def test_get_config_old_format(make_settings, config_file):
+    """Read credentials from a legacy colon-separated .pypirc."""
     try:
         make_settings("""
             [server-login]
@@ -317,6 +320,7 @@ def test_get_config_old_format(make_settings, config_file):
 
 
 def test_deprecated_repo(make_settings):
+    """Reject uploads to a deprecated PyPI repository URL."""
     with pytest.raises(exceptions.UploadToDeprecatedPyPIDetected) as err:
         upload_settings = make_settings("""
             [pypi]
@@ -365,6 +369,7 @@ def test_exception_for_redirect(
     message_match,
     make_settings,
 ):
+    """Raise a redirect exception when the repository redirects."""
     # Not using fixtures because this setup is significantly different
 
     upload_settings = make_settings(f"""
@@ -396,6 +401,7 @@ def test_exception_for_redirect(
 def test_prints_skip_message_for_uploaded_package(
     upload_settings, stub_repository, capsys, caplog
 ):
+    """Print a skip message when the package is already uploaded."""
     upload_settings.skip_existing = True
 
     # Short-circuit the upload
@@ -415,6 +421,7 @@ def test_prints_skip_message_for_uploaded_package(
 def test_prints_skip_message_for_response(
     upload_settings, stub_response, stub_repository, capsys, caplog
 ):
+    """Print a skip message when the response says the file exists."""
     upload_settings.skip_existing = True
 
     stub_response.status_code = 400
@@ -461,6 +468,7 @@ def test_prints_skip_message_for_response(
     ],
 )
 def test_skip_existing_skips_files_on_repository(response_kwargs):
+    """Skip a file when skip_existing is set and the response matches."""
     assert upload.skip_upload(
         response=pretend.stub(**response_kwargs),
         skip_existing=True,
@@ -478,6 +486,7 @@ def test_skip_existing_skips_files_on_repository(response_kwargs):
     ],
 )
 def test_skip_upload_doesnt_match(response_kwargs):
+    """Do not skip when the response does not match the skip pattern."""
     assert not upload.skip_upload(
         response=pretend.stub(**response_kwargs),
         skip_existing=True,
@@ -486,6 +495,7 @@ def test_skip_upload_doesnt_match(response_kwargs):
 
 
 def test_skip_upload_respects_skip_existing():
+    """Do not skip when skip_existing is disabled."""
     assert not upload.skip_upload(
         response=pretend.stub(),
         skip_existing=False,
@@ -495,6 +505,7 @@ def test_skip_upload_respects_skip_existing():
 
 @pytest.mark.parametrize("repo", ["pypi", "testpypi"])
 def test_values_from_env_pypi(monkeypatch, repo):
+    """Read repository and credentials from environment variables."""
     def none_upload(*args, **settings_kwargs):
         pass
 
@@ -516,6 +527,7 @@ def test_values_from_env_pypi(monkeypatch, repo):
 
 
 def test_values_from_env_non_pypi(monkeypatch, write_config_file):
+    """Read a non-PyPI repository and credentials from the environment."""
     write_config_file("""
         [distutils]
         index-servers =
@@ -552,6 +564,7 @@ def test_values_from_env_non_pypi(monkeypatch, write_config_file):
     ["https://upload.pypi.org/", "https://test.pypi.org/", "https://pypi.org/"],
 )
 def test_check_status_code_for_wrong_repo_url(repo_url, upload_settings, stub_response):
+    """Raise when the repository URL is not a valid upload URL."""
     upload_settings.repository_config["repository"] = repo_url
 
     stub_response.url = repo_url
@@ -570,6 +583,7 @@ def test_check_status_code_for_wrong_repo_url(repo_url, upload_settings, stub_re
 
 
 def test_upload_warns_attestations_non_pypi(upload_settings, caplog, stub_response):
+    """Warn when attestations are requested for a non-PyPI repository."""
     upload_settings.repository_config["repository"] = "https://notpypi.example.com"
     upload_settings.attestations = True
 

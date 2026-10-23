@@ -1,3 +1,4 @@
+"""Integration tests that upload to real package indexes."""
 import contextlib
 import datetime
 import functools
@@ -27,6 +28,7 @@ run = functools.partial(subprocess.run, check=True)
 
 @pytest.fixture(scope="session")
 def sampleproject_dist(tmp_path_factory: pytest.TempPathFactory):
+    """Build a fresh sampleproject distribution to upload."""
     checkout = tmp_path_factory.mktemp("sampleproject", numbered=False)
     tag = datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
 
@@ -72,6 +74,7 @@ sampleproject_token = (
 
 @pytest.mark.xfail(reason="service is unreliable (#684)")
 def test_pypi_upload(sampleproject_dist):
+    """Upload a distribution to Test PyPI with a token."""
     command = [
         "upload",
         "--repository-url",
@@ -87,6 +90,7 @@ def test_pypi_upload(sampleproject_dist):
 
 @pytest.mark.xfail(reason="service is unreliable (#684)")
 def test_pypi_error(sampleproject_dist, monkeypatch, capsys):
+    """Surface a clear error when the Test PyPI upload fails."""
     command = [
         "twine",
         "upload",
@@ -122,11 +126,13 @@ def test_pypi_error(sampleproject_dist, monkeypatch, capsys):
     ]
 )
 def uploadable_dist(request):
+    """Return a fixture distribution to upload."""
     return pathlib.Path(__file__).parent / "fixtures" / request.param
 
 
 @pytest.fixture(scope="session")
 def devpi_server(request, port_getter, watcher_getter, tmp_path_factory):
+    """Start a local devpi server with a fresh user and index."""
     server_dir = tmp_path_factory.mktemp("devpi")
     username = "foober"
     password = secrets.token_urlsafe()
@@ -161,6 +167,7 @@ def devpi_server(request, port_getter, watcher_getter, tmp_path_factory):
 
 @skip_if_windows
 def test_devpi_upload(devpi_server, uploadable_dist):
+    """Upload a distribution to a local devpi server."""
     command = [
         "upload",
         "--repository-url",
@@ -176,6 +183,7 @@ def test_devpi_upload(devpi_server, uploadable_dist):
 
 @pytest.fixture(scope="session")
 def pypiserver_instance(request, port_getter, watcher_getter, tmp_path_factory):
+    """Start a local pypiserver instance."""
     port = port_getter()
     url = f"http://localhost:{port}/"
 
@@ -205,6 +213,7 @@ def pypiserver_instance(request, port_getter, watcher_getter, tmp_path_factory):
 
 @skip_if_windows
 def test_pypiserver_upload(pypiserver_instance, uploadable_dist):
+    """Upload a distribution to a local pypiserver."""
     command = [
         "upload",
         "--repository-url",

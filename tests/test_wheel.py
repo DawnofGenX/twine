@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tests for reading metadata from wheel files."""
 import pathlib
 import re
 import zipfile
@@ -24,21 +25,25 @@ from twine import wheel
 
 @pytest.fixture()
 def example_wheel(request):
+    """Build a Wheel from the bundled twine fixture."""
     parent = pathlib.Path(__file__).parent
     file_name = str(parent / "fixtures" / "twine-4.0.2-py3-none-any.whl")
     return wheel.Wheel(file_name)
 
 
 def test_version_parsing(example_wheel):
+    """Parse the Python version from a wheel's file name."""
     assert example_wheel.py_version == "py3"
 
 
 def test_version_parsing_missing_pyver(monkeypatch, example_wheel):
+    """Fall back to any when the wheel name has no Python version."""
     wheel.wheel_file_re = pretend.stub(match=lambda a: None)
     assert example_wheel.py_version == "any"
 
 
 def test_find_metadata_files():
+    """Select the metadata file from a wheel's member names."""
     names = [
         "package/lib/__init__.py",
         "package/lib/version.py",

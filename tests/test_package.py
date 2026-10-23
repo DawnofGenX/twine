@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tests for the PackageFile class and GPG signing."""
 import json
 import string
 
@@ -27,6 +28,7 @@ from . import helpers
 
 
 def test_sign_file(monkeypatch):
+    """Sign a package file with gpg."""
     replaced_check_call = pretend.call_recorder(lambda args: None)
     monkeypatch.setattr(package_file.subprocess, "check_call", replaced_check_call)
     filename = "tests/fixtures/deprecated-pypirc"
@@ -47,6 +49,7 @@ def test_sign_file(monkeypatch):
 
 
 def test_sign_file_with_identity(monkeypatch):
+    """Sign a package file with a specific gpg identity."""
     replaced_check_call = pretend.call_recorder(lambda args: None)
     monkeypatch.setattr(package_file.subprocess, "check_call", replaced_check_call)
     filename = "tests/fixtures/deprecated-pypirc"
@@ -67,6 +70,7 @@ def test_sign_file_with_identity(monkeypatch):
 
 
 def test_run_gpg_raises_exception_if_no_gpgs(monkeypatch):
+    """Raise when the gpg executable is not found."""
     replaced_check_call = pretend.raiser(FileNotFoundError("not found"))
     monkeypatch.setattr(package_file.subprocess, "check_call", replaced_check_call)
     gpg_args = ("gpg", "--detach-sign", "-a", "pypircfile")
@@ -78,6 +82,7 @@ def test_run_gpg_raises_exception_if_no_gpgs(monkeypatch):
 
 
 def test_run_gpg_raises_exception_if_not_using_gpg(monkeypatch):
+    """Raise when the signing executable is not gpg."""
     replaced_check_call = pretend.raiser(FileNotFoundError("not found"))
     monkeypatch.setattr(package_file.subprocess, "check_call", replaced_check_call)
     gpg_args = ("not_gpg", "--detach-sign", "-a", "pypircfile")
@@ -89,6 +94,7 @@ def test_run_gpg_raises_exception_if_not_using_gpg(monkeypatch):
 
 
 def test_run_gpg_falls_back_to_gpg2(monkeypatch):
+    """Fall back to gpg2 when gpg is not available."""
     def check_call(arg_list):
         if arg_list[0] == "gpg":
             raise FileNotFoundError("gpg not found")
@@ -104,6 +110,7 @@ def test_run_gpg_falls_back_to_gpg2(monkeypatch):
 
 
 def test_package_signed_name_is_correct():
+    """Compute the signed file name for a package."""
     filename = "tests/fixtures/deprecated-pypirc"
 
     package = package_file.PackageFile(
@@ -119,6 +126,7 @@ def test_package_signed_name_is_correct():
 
 
 def test_package_add_attestations(tmp_path):
+    """Attach attestation files to a package."""
     package = package_file.PackageFile.from_filename(helpers.WHEEL_FIXTURE, None)
 
     assert package.attestations is None
@@ -139,6 +147,7 @@ def test_package_add_attestations(tmp_path):
 
 
 def test_package_add_attestations_invalid_json(tmp_path):
+    """Raise when an attestation file is not valid JSON."""
     package = package_file.PackageFile.from_filename(helpers.WHEEL_FIXTURE, None)
 
     assert package.attestations is None
@@ -163,6 +172,7 @@ def test_package_add_attestations_invalid_json(tmp_path):
     ],
 )
 def test_package_safe_name_is_correct(pkg_name, expected_name):
+    """Compute the safe (normalized) name for a package."""
     package = package_file.PackageFile(
         filename="tests/fixtures/deprecated-pypirc",
         comment=None,
@@ -412,12 +422,14 @@ def test_malformed_from_file(monkeypatch):
 
 
 def test_package_from_sdist():
+    """Build a PackageFile from an sdist and report its version."""
     filename = "tests/fixtures/twine-1.5.0.tar.gz"
     p = package_file.PackageFile.from_filename(filename, comment=None)
     assert p.python_version == "source"
 
 
 def test_package_from_unrecognized_file_error():
+    """Raise when the file is not a recognized distribution."""
     filename = "twine/package.py"
     with pytest.raises(exceptions.InvalidDistribution) as err:
         package_file.PackageFile.from_filename(filename, comment=None)

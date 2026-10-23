@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for twine's entry point and error handling."""
 import sys
 
 import pretend
@@ -30,6 +31,7 @@ def _unwrap_lines(text):
 
 
 def test_exception_handling(monkeypatch, capsys):
+    """Return a non-zero exit code and print a message on failure."""
     monkeypatch.setattr(sys, "argv", ["twine", "upload", "missing.whl"])
 
     error = dunder_main.main()
@@ -50,6 +52,7 @@ def test_exception_handling(monkeypatch, capsys):
 def test_http_exception_handling(
     monkeypatch, capsys, status_code, status_phrase, reason
 ):
+    """Print the HTTP status and reason when an upload fails."""
     monkeypatch.setattr(sys, "argv", ["twine", "upload", "test.whl"])
     monkeypatch.setattr(
         upload,
@@ -75,6 +78,7 @@ def test_http_exception_handling(
 
 
 def test_no_color_exception(monkeypatch, capsys):
+    """Print the error without color when --no-color is set."""
     monkeypatch.setattr(sys, "argv", ["twine", "--no-color", "upload", "missing.whl"])
 
     error = dunder_main.main()

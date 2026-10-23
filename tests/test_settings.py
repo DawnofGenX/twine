@@ -78,6 +78,7 @@ def test_settings_transforms_repository_config_non_pypi(write_config_file):
 
 
 def test_settings_verify_feature_compatibility() -> None:
+    """Do not raise when skip_existing targets a compatible repository."""
     s = settings.Settings(skip_existing=True)
     s.repository_config = {"repository": repository.WAREHOUSE}
     try:
@@ -177,17 +178,22 @@ def test_no_password_prompt_if_client_cert_and_non_interactive(entered_password)
 
 
 class TestArgumentParsing:
+    """Tests for Settings' argparse argument registration."""
+
     @staticmethod
     def parse_args(args):
+        """Parse args through the parser that Settings registers."""
         parser = argparse.ArgumentParser()
         settings.Settings.register_argparse_arguments(parser)
         return parser.parse_args(args)
 
     def test_non_interactive_flag(self):
+        """Set non_interactive when the --non-interactive flag is passed."""
         args = self.parse_args(["--non-interactive"])
         assert args.non_interactive
 
     def test_non_interactive_environment(self, monkeypatch):
+        """Honor the TWINE_NON_INTERACTIVE environment variable."""
         monkeypatch.setenv("TWINE_NON_INTERACTIVE", "1")
         args = self.parse_args([])
         assert args.non_interactive
@@ -196,5 +202,6 @@ class TestArgumentParsing:
         assert not args.non_interactive
 
     def test_attestations_flag(self):
+        """Set attestations when the --attestations flag is passed."""
         args = self.parse_args(["--attestations"])
         assert args.attestations

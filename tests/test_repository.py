@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tests for the Repository class and its upload flow."""
 import logging
 from contextlib import contextmanager
 
@@ -27,6 +28,7 @@ from twine import utils
 
 @pytest.fixture()
 def default_repo():
+    """Build a Repository pointed at the default PyPI URL."""
     return repository.Repository(
         repository_url=utils.DEFAULT_REPOSITORY,
         username="username",
@@ -106,6 +108,7 @@ def test_make_user_agent_string(default_repo):
 
 
 def response_with(**kwattrs):
+    """Build a requests.Response with the given attributes set."""
     resp = requests.Response()
     for attr, value in kwattrs.items():
         if hasattr(resp, attr):
@@ -342,6 +345,7 @@ def test_package_is_uploaded_incorrect_repo_url():
     ],
 )
 def test_logs_username_and_password(username, password, messages, caplog):
+    """Log the resolved username and password at INFO level."""
     caplog.set_level(logging.INFO, "twine")
 
     repository.Repository(

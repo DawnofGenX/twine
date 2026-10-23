@@ -1,3 +1,4 @@
+"""Shared pytest fixtures for twine's test suite."""
 import getpass
 import logging.config
 import textwrap
@@ -45,6 +46,7 @@ def configure_output():
 
 @pytest.fixture()
 def config_file(tmpdir, monkeypatch):
+    """Point the default config file at a .pypirc in a temporary home."""
     path = tmpdir / ".pypirc"
     # Mimic common case of .pypirc in home directory
     monkeypatch.setattr(utils, "DEFAULT_CONFIG_FILE", path)
@@ -53,6 +55,7 @@ def config_file(tmpdir, monkeypatch):
 
 @pytest.fixture
 def write_config_file(config_file):
+    """Return a helper that writes a .pypirc body to the config file."""
     def _write(config):
         config_file.write(textwrap.dedent(config))
         return config_file
@@ -82,4 +85,5 @@ def make_settings(write_config_file):
 
 @pytest.fixture
 def entered_password(monkeypatch):
+    """Stub getpass so password prompts return a fixed value."""
     monkeypatch.setattr(getpass, "getpass", lambda prompt: "entered pw")

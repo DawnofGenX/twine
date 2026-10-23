@@ -1,3 +1,4 @@
+"""Tests for twine's credential resolution and keyring handling."""
 import base64
 import getpass
 import logging
@@ -16,10 +17,12 @@ from twine import utils
 
 @pytest.fixture
 def config() -> utils.RepositoryConfig:
+    """Return a minimal repository config for the auth tests."""
     return dict(repository="system")
 
 
 def test_get_username_keyring_defers_to_prompt(monkeypatch, entered_username, config):
+    """Prompt for a username when keyring has no stored credential."""
     class MockKeyring:
         @staticmethod
         def get_credential(system, user):
@@ -34,6 +37,7 @@ def test_get_username_keyring_defers_to_prompt(monkeypatch, entered_username, co
 def test_get_username_keyring_not_installed_defers_to_prompt(
     monkeypatch, entered_username, config
 ):
+    """Prompt for a username when keyring is not installed."""
     monkeypatch.setattr(auth, "keyring", None)
 
     username = auth.Resolver(config, auth.CredentialInput()).username
@@ -41,6 +45,7 @@ def test_get_username_keyring_not_installed_defers_to_prompt(
 
 
 def test_get_password_keyring_defers_to_prompt(monkeypatch, entered_password, config):
+    """Prompt for a password when keyring has no stored password."""
     class MockKeyring:
         @staticmethod
         def get_password(system, user):
@@ -55,6 +60,7 @@ def test_get_password_keyring_defers_to_prompt(monkeypatch, entered_password, co
 def test_get_password_keyring_not_installed_defers_to_prompt(
     monkeypatch, entered_password, config
 ):
+    """Prompt for a password when keyring is not installed."""
     monkeypatch.setattr(auth, "keyring", None)
 
     pw = auth.Resolver(config, auth.CredentialInput("user")).password
@@ -62,23 +68,27 @@ def test_get_password_keyring_not_installed_defers_to_prompt(
 
 
 def test_no_password_defers_to_prompt(monkeypatch, entered_password, config):
+    """Prompt for a password when the config has none."""
     config.update(password=None)
     pw = auth.Resolver(config, auth.CredentialInput("user")).password
     assert pw == "entered pw"
 
 
 def test_empty_password_bypasses_prompt(monkeypatch, entered_password, config):
+    """Use an empty password from the config without prompting."""
     config.update(password="")
     pw = auth.Resolver(config, auth.CredentialInput("user")).password
     assert pw == ""
 
 
 def test_no_username_non_interactive_aborts(config):
+    """Abort in non-interactive mode when no username is available."""
     with pytest.raises(exceptions.NonInteractive):
         auth.Private(config, auth.CredentialInput()).username
 
 
 def test_no_password_non_interactive_aborts(config):
+    """Abort in non-interactive mode when no password is available."""
     with pytest.raises(exceptions.NonInteractive):
         auth.Private(config, auth.CredentialInput("user")).password
 
@@ -86,6 +96,7 @@ def test_no_password_non_interactive_aborts(config):
 def test_get_username_and_password_keyring_overrides_prompt(
     monkeypatch, config, caplog
 ):
+    """Prefer keyring credentials over prompted ones and log the source."""
     caplog.set_level(logging.INFO, "twine")
 
     class MockKeyring:
@@ -125,18 +136,21 @@ def keyring_missing_get_credentials(monkeypatch):
 
 @pytest.fixture
 def entered_username(monkeypatch):
+    """Stub input so username prompts return a fixed value."""
     monkeypatch.setattr(auth, "input", lambda prompt: "entered user", raising=False)
 
 
 def test_get_username_keyring_missing_get_credentials_prompts(
     entered_username, keyring_missing_get_credentials, config
 ):
+    """Prompt for a username when keyring lacks get_credential."""
     assert auth.Resolver(config, auth.CredentialInput()).username == "entered user"
 
 
 def test_get_username_keyring_missing_non_interactive_aborts(
     entered_username, keyring_missing_get_credentials, config
 ):
+    """Abort in non-interactive mode when keyring lacks get_credential."""
     with pytest.raises(exceptions.NonInteractive):
         auth.Private(config, auth.CredentialInput()).username
 
@@ -144,6 +158,7 @@ def test_get_username_keyring_missing_non_interactive_aborts(
 def test_get_password_keyring_missing_non_interactive_aborts(
     entered_username, keyring_missing_get_credentials, config
 ):
+    """Abort in non-interactive mode when keyring lacks get_password."""
     with pytest.raises(exceptions.NonInteractive):
         auth.Private(config, auth.CredentialInput("user")).password
 
@@ -151,6 +166,7 @@ def test_get_password_keyring_missing_non_interactive_aborts(
 def test_get_username_keyring_runtime_error_logged(
     entered_username, monkeypatch, config, caplog
 ):
+    """Log and fall back to a prompt when keyring raises RuntimeError."""
     class FailKeyring:
         """Simulate missing keyring backend raising RuntimeError on get_credential."""
 
@@ -172,6 +188,7 @@ def test_get_username_keyring_runtime_error_logged(
 def test_get_password_keyring_runtime_error_logged(
     entered_username, entered_password, monkeypatch, config, caplog
 ):
+    """Log and fall back to a prompt when keyring raises RuntimeError."""
     class FailKeyring:
         """Simulate missing keyring backend raising RuntimeError on get_password."""
 
@@ -201,6 +218,7 @@ def _raise_home_key_error():
 def test_get_username_keyring_key_error_logged(
     entered_username, monkeypatch, config, caplog
 ):
+    """Log and fall back to a prompt when keyring raises KeyError."""
     class FailKeyring:
         @staticmethod
         def get_credential(system, username):
@@ -223,6 +241,7 @@ def test_get_username_keyring_key_error_logged(
 def test_get_password_keyring_key_error_logged(
     entered_username, entered_password, monkeypatch, config, caplog
 ):
+    """Log and fall back to a prompt when keyring raises KeyError."""
     class FailKeyring:
         @staticmethod
         def get_password(system, username):
@@ -243,6 +262,7 @@ def test_get_password_keyring_key_error_logged(
 
 
 def test_logs_cli_values(caplog, config):
+    """Log the credentials supplied on the command line."""
     caplog.set_level(logging.INFO, "twine")
 
     res = auth.Resolver(config, auth.CredentialInput("username", "password"))
@@ -257,6 +277,7 @@ def test_logs_cli_values(caplog, config):
 
 
 def test_logs_config_values(config, caplog):
+    """Log the credentials read from the config file."""
     caplog.set_level(logging.INFO, "twine")
 
     config.update(username="username", password="password")
@@ -287,6 +308,7 @@ def test_warns_for_empty_password(
     config,
     caplog,
 ):
+    """Warn when the resolved password is empty."""
     # Avoiding additional warning "No recommended backend was available"
     monkeypatch.setattr(auth.keyring, "get_password", lambda system, user: None)
 
@@ -302,21 +324,25 @@ def test_warns_for_empty_password(
     reason="keyring module is optional on ppc64le and s390x",
 )
 def test_keyring_module():
+    """Assert that a keyring module is importable."""
     assert auth.keyring is not None
 
 
 def test_resolver_authenticator_config_authentication(config):
+    """Build an HTTPBasicAuth from config credentials."""
     config.update(username="username", password="password")
     res = auth.Resolver(config, auth.CredentialInput())
     assert isinstance(res.authenticator, requests.auth.HTTPBasicAuth)
 
 
 def test_resolver_authenticator_credential_input_authentication(config):
+    """Build an HTTPBasicAuth from prompted credentials."""
     res = auth.Resolver(config, auth.CredentialInput("username", "password"))
     assert isinstance(res.authenticator, requests.auth.HTTPBasicAuth)
 
 
 def test_resolver_authenticator_trusted_publishing_authentication(config):
+    """Build a trusted-publishing authenticator for a token credential."""
     res = auth.Resolver(
         config, auth.CredentialInput(username="__token__", password="skip-stdin")
     )
@@ -328,23 +354,30 @@ def test_resolver_authenticator_trusted_publishing_authentication(config):
 
 
 class MockResponse:
+    """A stand-in for a requests response with a fixed status and body."""
+
     def __init__(self, status_code: int, json: t.Any) -> None:
         self.status_code = status_code
         self._json = json
 
     def json(self, *args, **kwargs) -> t.Any:
+        """Return the canned JSON body."""
         return self._json
 
     def raise_for_status(self) -> None:
+        """Raise HTTPError when the status code is an error."""
         if 400 <= self.status_code:
             raise requests.exceptions.HTTPError()
 
     @property
     def ok(self) -> bool:
+        """Report whether the status code is a success."""
         return self.status_code < 400
 
 
 class MockSession:
+    """A stand-in for a requests session replaying canned responses."""
+
     def __init__(
         self,
         get_response_list: t.List[MockResponse],
@@ -355,17 +388,20 @@ class MockSession:
         self.post_response_list = post_response_list
 
     def get(self, url: str, **kwargs) -> MockResponse:
+        """Return the next canned GET response."""
         response = self.get_response_list[self.get_counter]
         self.get_counter += 1
         return response
 
     def post(self, url: str, **kwargs) -> MockResponse:
+        """Return the next canned POST response."""
         response = self.post_response_list[self.post_counter]
         self.post_counter += 1
         return response
 
 
 def test_trusted_publish_authenticator_refreshes_token(monkeypatch, config):
+    """Fetch a fresh token when the cached one is missing."""
     def make_session():
         return MockSession(
             get_response_list=[
@@ -406,6 +442,7 @@ def test_trusted_publish_authenticator_refreshes_token(monkeypatch, config):
 
 
 def test_trusted_publish_authenticator_reuses_token(monkeypatch, config):
+    """Reuse the cached token without re-fetching it."""
     def make_session():
         return MockSession(
             get_response_list=[
@@ -446,6 +483,7 @@ def test_trusted_publish_authenticator_reuses_token(monkeypatch, config):
 
 
 def test_inability_to_make_token_raises_error():
+    """Raise TrustedPublishingFailure when no token can be obtained."""
     class MockResolver:
         def make_trusted_publishing_token(self) -> None:
             return None

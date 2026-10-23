@@ -29,6 +29,7 @@ NEW_WHEEL_FIXTURE = os.path.join(FIXTURES_DIR, "twine-6.2.0-py3-none-any.whl")
 
 
 def build_archive(path, name, archive_format, files):
+    """Build a tar.gz or zip archive from a mapping of member names to contents."""
     filepath = path / f"{name}.{archive_format}"
 
     if archive_format == "tar.gz":

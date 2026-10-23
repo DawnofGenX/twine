@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tests for twine's check command and its warning stream."""
 import logging
 
 import pretend
@@ -21,23 +22,30 @@ from twine.commands import check
 
 
 class TestWarningStream:
+    """Tests for the warning stream that reformats docutils output."""
+
     def setup_method(self):
+        """Create a fresh warning stream for each test."""
         self.stream = check._WarningStream()
 
     def test_write_match(self):
+        """Rewrite a matching docutils warning into a short line."""
         self.stream.write("<string>:2: (WARNING/2) Title underline too short.")
         assert self.stream.getvalue() == "line 2: Warning: Title underline too short.\n"
 
     def test_write_nomatch(self):
+        """Pass through text that does not match the warning pattern."""
         self.stream.write("this does not match")
         assert self.stream.getvalue() == "this does not match"
 
     def test_str_representation(self):
+        """Render the collected warnings as a single string."""
         self.stream.write("<string>:2: (WARNING/2) Title underline too short.")
         assert str(self.stream) == "line 2: Warning: Title underline too short."
 
 
 def test_fails_no_distributions(caplog):
+    """Fail and log an error when there are no files to check."""
     assert not check.check([])
     assert caplog.record_tuples == [
         (
@@ -49,6 +57,7 @@ def test_fails_no_distributions(caplog):
 
 
 def build_sdist_with_metadata(path, metadata):
+    """Build an sdist whose PKG-INFO carries the given metadata."""
     name = "test"
     version = "1.2.3"
     sdist = helpers.build_archive(
@@ -65,6 +74,7 @@ def build_sdist_with_metadata(path, metadata):
 
 @pytest.mark.parametrize("strict", [False, True])
 def test_warns_missing_description(strict, tmp_path, capsys, caplog):
+    """Warn when the distribution has no description."""
     sdist = build_sdist_with_metadata(
         tmp_path,
         """\
@@ -95,6 +105,7 @@ def test_warns_missing_description(strict, tmp_path, capsys, caplog):
 
 
 def test_fails_rst_syntax_error(tmp_path, capsys, caplog):
+    """Fail when the RST description has a syntax error."""
     sdist = build_sdist_with_metadata(
         tmp_path,
         """\
@@ -125,6 +136,7 @@ def test_fails_rst_syntax_error(tmp_path, capsys, caplog):
 
 
 def test_fails_rst_no_content(tmp_path, capsys, caplog):
+    """Fail when the RST description is empty."""
     sdist = build_sdist_with_metadata(
         tmp_path,
         """\
@@ -152,6 +164,7 @@ def test_fails_rst_no_content(tmp_path, capsys, caplog):
 
 
 def test_passes_rst_description(tmp_path, capsys, caplog):
+    """Pass when the RST description renders cleanly."""
     sdist = build_sdist_with_metadata(
         tmp_path,
         """\
@@ -176,6 +189,7 @@ def test_passes_rst_description(tmp_path, capsys, caplog):
 
 @pytest.mark.parametrize("content_type", ["text/markdown", "text/plain"])
 def test_passes_markdown_description(content_type, tmp_path, capsys, caplog):
+    """Pass when the Markdown description renders cleanly."""
     sdist = build_sdist_with_metadata(
         tmp_path,
         f"""\
@@ -198,6 +212,7 @@ def test_passes_markdown_description(content_type, tmp_path, capsys, caplog):
 
 
 def test_main(monkeypatch):
+    """Forward the file list and strict flag to check."""
     check_result = pretend.stub()
     check_stub = pretend.call_recorder(lambda a, strict=False: check_result)
     monkeypatch.setattr(check, "check", check_stub)

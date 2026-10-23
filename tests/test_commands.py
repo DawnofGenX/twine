@@ -1,3 +1,4 @@
+"""Tests for twine's shared command helpers."""
 import os
 
 import pytest
@@ -8,6 +9,7 @@ from twine import exceptions
 
 
 def test_ensure_wheel_files_uploaded_first():
+    """Order wheel files before other distributions for upload."""
     files = commands._group_wheel_files_first(
         ["twine/foo.py", "twine/first.whl", "twine/bar.py", "twine/second.whl"]
     )
@@ -21,12 +23,14 @@ def test_ensure_wheel_files_uploaded_first():
 
 
 def test_ensure_if_no_wheel_files():
+    """Leave the file order unchanged when no wheels are present."""
     files = commands._group_wheel_files_first(["twine/foo.py", "twine/bar.py"])
     expected = ["twine/foo.py", "twine/bar.py"]
     assert expected == files
 
 
 def test_find_dists_expands_globs():
+    """Expand glob patterns into matching distribution files."""
     files = sorted(commands._find_dists(["twine/__*.py"]))
     expected = [
         os.path.join("twine", "__init__.py"),
@@ -36,11 +40,13 @@ def test_find_dists_expands_globs():
 
 
 def test_find_dists_errors_on_invalid_globs():
+    """Raise InvalidDistribution when a glob matches no files."""
     with pytest.raises(exceptions.InvalidDistribution):
         commands._find_dists(["twine/*.rb"])
 
 
 def test_find_dists_handles_real_files():
+    """Return real files as-is alongside expanded globs."""
     expected = [
         "twine/__init__.py",
         "twine/__main__.py",
